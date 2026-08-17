@@ -182,7 +182,8 @@ class MoldenParser(ParserBase):
         candidates = [self.path / (self.baseName + suf) for suf in [".molden.input", ".molden"]]
         for c in candidates:
             if c.exists():
-                return read_molden(c, self.program)
+                with self._local_path(c) as p:
+                    return read_molden(p, self.program)
 
         raise FileNotFoundError(
             f"Either .molden.input nor .molden found with basename {self.baseName} in {self.path.resolve()}"

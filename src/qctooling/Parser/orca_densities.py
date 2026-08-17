@@ -95,9 +95,10 @@ class DensityParser(ParserBase):
         if len(unavail_dens) != 0:
             raise ValueError(f"Densities {unavail_dens} not available: only {self.densities} are available")
 
-        req_dens = parse_densities(
-            self.path / (self.baseName + ".densities"),
-            [d[1:] if i in dens_idx else d[1]*d[2] for i,d in enumerate(self.densinfos)],
-            )
+        with self._local_path(self.path / (self.baseName + ".densities")) as dens_path:
+            req_dens = parse_densities(
+                dens_path,
+                [d[1:] if i in dens_idx else d[1]*d[2] for i,d in enumerate(self.densinfos)],
+                )
 
         return [d for d in req_dens]

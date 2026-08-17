@@ -156,7 +156,8 @@ class OrcaParser(ParserBase):
         candidates = [self.path / (self.baseName + suf) for suf in [".out", ".oout"]]
         for c in candidates:
             if c.exists():
-                return parseOutFile(c, self.sections, self.logger)
+                with self._local_path(c) as p:
+                    return parseOutFile(p, self.sections, self.logger)
 
         raise FileNotFoundError(
             f"Either .out nor .oout found with basename {self.baseName} in {self.path.resolve()}"
