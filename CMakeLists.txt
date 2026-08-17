@@ -26,3 +26,21 @@ FetchContent_MakeAvailable(cint)
 install(TARGETS cint
     LIBRARY DESTINATION qctooling/_libcint
     RUNTIME DESTINATION qctooling/_libcint)
+
+# -------------------------------------------------------------------------
+# Native molden parser (C, stdlib only). Compiled on install like libcint
+# and shipped inside the package under qctooling/_native. Loaded at runtime
+# with ctypes (see src/qctooling/_molden_helper.py).
+# -------------------------------------------------------------------------
+enable_language(C)
+
+add_library(molden_helper SHARED native/molden_helper.c)
+set_target_properties(molden_helper PROPERTIES
+    C_STANDARD 11
+    C_STANDARD_REQUIRED ON)
+target_compile_options(molden_helper PRIVATE
+    -Wall -Wextra -fstack-protector-strong -D_FORTIFY_SOURCE=2)
+
+install(TARGETS molden_helper
+    LIBRARY DESTINATION qctooling/_native
+    RUNTIME DESTINATION qctooling/_native)
