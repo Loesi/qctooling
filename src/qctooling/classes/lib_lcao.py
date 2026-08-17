@@ -1,7 +1,11 @@
 from dataclasses import dataclass
+from functools import cached_property
 import numpy as np
 import numpy.typing as npt
-from typing import Literal, List
+from typing import Literal, List, Union, Tuple
+
+from .lib_xyz import Xyz
+from ..intor import overlap, kinetic, nuclear
 
 l2orb = ["s", "p", "d", "f", "g"]
 cs = {
@@ -42,12 +46,36 @@ class Basis_grp:
         else:
             raise ValueError(f"Only 'Spherical' and 'Carthesian' are valid otypes not: {self.otype}")
 
+    @property
+    def asTuple(self) -> Tuple[int,int,npt.ArrayLike,npt.ArrayLike]:
+        return (self.atom_idx, self.l, self.alpha, self.coeff[:,None])
+
 @dataclass(frozen=True)
 class Wfn:
-    basis: List[Basis_grp]
+    basis: List[Basis_grp] # as unnormalized coeffs (N_cont * d_k)
+    xyz: Xyz
     C: npt.NDArray[np.float64]
     O: npt.NDArray[np.float64]
     E: npt.NDArray[np.float64]
     S: npt.NDArray[np.bool]
     I: npt.NDArray[np.str_]
 
+    @cached_property
+    def basis_str(self):
+        return [f"{self.xyz.elements[b.atom_idx]}-{b}" for b in self.basis]
+
+    @cached_property
+    def S_matrix(self) -> npt.NDArray[np.float64]:
+        return overlap(self.xyz.coordinates, [b.asTuple for b in self.basis])
+
+    @cached_property
+    def S_matrix_root(self) -> npt.NDArray[np.float64]:
+        s, U = np.linalg.eigh(self.S_matrix)
+        return U @ np.diag(1.0/np.sqrt(s)) @ U.T
+
+    @cached_property
+    def density(self) -> Union[npt.NDArray[np.float64], Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]]:
+        if self.C.shape[0] != 1:
+            return (self.C[0].T @ self.C[0], self.C[1].T @ self.C[1])
+        else:
+            return self.C[0].T @ self.C[0]

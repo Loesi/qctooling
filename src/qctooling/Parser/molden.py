@@ -3,7 +3,7 @@ import pathlib, io
 import numpy as np
 import numpy.typing as npt
 from dataclasses import dataclass
-from typing import Literal, Tuple, List
+from typing import Literal, Tuple, List, Callable, Dict
 from pydantic import BaseModel
 
 from ..classes import Basis_grp, l2orb, Wfn, Xyz
@@ -27,17 +27,26 @@ def read_pseudo(file: io.TextIOWrapper):
     return None, file.readline()
     pass
 
-def read_gto(file: io.TextIOWrapper, is_norm: bool, is_dflt_order: bool) -> Tuple[List[Basis_grp], str]:
+normalization_funcs: Dict[str, Callable[[npt.NDArray[np.float64], npt.NDArray[np.float64], int], npt.NDArray[np.float64]]] = {
+    "orca": lambda a, c, l: (
+        c / (np.pow(2 * a / np.pi, 3/4) * np.pow(4 * a, l/2)) if l !=4 else
+        c * np.sqrt(3) / (np.pow(2 * a / np.pi, 3/4) * np.pow(4 * a, l/2))
+    ),
+    "mwfn": lambda a,c, l: a,
+}
+
+def read_gto(file: io.TextIOWrapper, program: str) -> Tuple[List[Basis_grp], str]:
     basis: list[Basis_grp] = []
     run: bool = True
     line = ""
+    norm_func = normalization_funcs[program]
     while run:
         line = file.readline()
         if line.startswith("["):
             run = False
             continue
 
-        atom_idx = int(line.split()[0])
+        atom_idx = int(line.split()[0])-1
         shell_counter = np.arange(5)
         for l in file:
             if l == "\n":
@@ -50,7 +59,9 @@ def read_gto(file: io.TextIOWrapper, is_norm: bool, is_dflt_order: bool) -> Tupl
                 alpha[i], coeff[i] = vals
 
             shell_counter[l] += 1
-            basis.append(Basis_grp(atom_idx, shell_counter[l], l,alpha, coeff ))
+            basis.append(Basis_grp(
+                atom_idx, shell_counter[l], l, alpha, norm_func(alpha, coeff, l)
+            ))
 
     tags = []
     while not any(line.startswith(k) for k in keywords):
@@ -114,8 +125,22 @@ def read_mo(
 
     return coeffs, occ, energy, spin, irrep
 
+def post_correction(wfn: Wfn, program: str) -> Wfn:
+    match program:
+        case "orca":
+            csum = np.cumsum([b.n_orb for b in wfn.basis])
+            for i, b in enumerate(wfn.basis):
+                if b.l < 3:
+                    continue
+                wfn.C[:, :, csum[i-1]+5 : csum[i]] *= -1
 
-def read_molden(path: pathlib.Path, program: Literal['orca', 'multiwfn']) -> Tuple[Wfn, Xyz]:
+        case _:
+            pass
+
+    return wfn
+
+
+def read_molden(path: pathlib.Path, program: Literal['orca', 'multiwfn']) -> Wfn:
     """
     Parse basis fcts und LCAO coeffs from molden.
     program: to differentiate if normalized (like orca) or unnormalized (like multiwfn) primitive coefficients are expected
@@ -139,13 +164,13 @@ def read_molden(path: pathlib.Path, program: Literal['orca', 'multiwfn']) -> Tup
         xyz, line = read_atoms(f)
         if line.startswith("[PSEUDO]"):
             pseudo, line = read_pseudo(f)
-        basis, line = read_gto(f, is_norm_coeffs, is_dflt_order)
+        basis, line = read_gto(f, program)
         n_AO = sum(b.n_orb for b in basis)
         coeffs, occ, energy, spin, irrep = read_mo(f, n_AO)
 
-        wfn = Wfn(basis, coeffs, occ, energy, spin, irrep)
-
-        return wfn, xyz
+    wfn = Wfn(basis, xyz, coeffs, occ, energy, spin, irrep)
+    wfn = post_correction(wfn, program)
+    return wfn
     
 class MoldenParser(ParserBase):
     program: Literal['orca', 'multiwfn'] = 'orca'

@@ -10,5 +10,28 @@ dependencies = [
 ]
 
 [build-system]
-requires = ["uv_build>=0.11.2,<0.12.0"]
-build-backend = "uv_build"
+requires = ["scikit-build-core>=0.10", "cmake>=3.15", "ninja"]
+build-backend = "scikit_build_core.build"
+
+[tool.scikit-build]
+cmake.build-type = "Release"
+cmake.version = ">=3.15"
+cmake.args = ["-GNinja"]
+build-dir = "build/{wheel_tag}"
+
+[tool.scikit-build.wheel]
+exclude = [
+    "include/*",
+    "lib/*",
+    "lib/cmake/**",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.3.0",
+    "ipympl>=0.10.0",
+    "ipython>=9.16.1",
+    "ipywidgets>=8.1.8",
+    "matplotlib>=3.11.1",
+    "pytest>=9.1.1",
+]
