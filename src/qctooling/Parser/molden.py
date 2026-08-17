@@ -32,7 +32,7 @@ normalization_funcs: Dict[str, Callable[[npt.NDArray[np.float64], npt.NDArray[np
         c / (np.pow(2 * a / np.pi, 3/4) * np.pow(4 * a, l/2)) if l !=4 else
         c * np.sqrt(3) / (np.pow(2 * a / np.pi, 3/4) * np.pow(4 * a, l/2))
     ),
-    "mwfn": lambda a,c, l: a,
+    "multiwfn": lambda a, c, l: c,
 }
 
 def read_gto(file: io.TextIOWrapper, program: str) -> Tuple[List[Basis_grp], str]:
@@ -45,11 +45,13 @@ def read_gto(file: io.TextIOWrapper, program: str) -> Tuple[List[Basis_grp], str
         if line.startswith("["):
             run = False
             continue
+        if line.strip() == "":
+            continue
 
         atom_idx = int(line.split()[0])-1
         shell_counter = np.arange(5)
         for l in file:
-            if l == "\n":
+            if l.strip() == "":
                 break
             vals = l.split()
             l, n_prim = l2orb.index(vals[0]), int(vals[1])
@@ -74,16 +76,17 @@ def read_gto(file: io.TextIOWrapper, program: str) -> Tuple[List[Basis_grp], str
 def read_mo(
     file: io.TextIOWrapper, n_ao: int
     ) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.bool], npt.NDArray[np.str_]]:
+    """Symmetry labels (e.g. "1a") stored as full strings, not truncated."""
 
     coeffs = np.empty(shape=(2, n_ao, n_ao), dtype=np.float64)
     occ = np.empty(shape=(2, n_ao), dtype=np.float64)
     energy = np.empty(shape=(2, n_ao), dtype=np.float64)
     spin = np.empty(shape=(2, n_ao), dtype=np.bool)
-    irrep = np.empty(shape=(2, n_ao), dtype=np.str_)
+    irrep = np.empty(shape=(2, n_ao), dtype="U16")
 
     i = 0
+    line = file.readline()
     while i < 2:
-        line = file.readline()
         for j in range(n_ao):
             k = 0
             while k != 4:
@@ -114,7 +117,7 @@ def read_mo(
 
         i+= 1
 
-        if line == "\n":
+        if i == 1 and (line.strip() == "" or line.startswith("[")):
             coeffs = coeffs[0]
             occ = occ[0]
             energy = energy[0]

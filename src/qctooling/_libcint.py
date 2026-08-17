@@ -14,9 +14,9 @@ import os
 import sys
 
 _LIB_NAMES = {
-    "win32": "cint.dll",
-    "darwin": "libcint.dylib",
-    "linux": "libcint.so",
+    "win32": ["cint.dll"],
+    "darwin": ["libcint.dylib"],
+    "linux": ["libcint.so", "libcint.so.6"],
 }
 
 def _candidate_paths():
