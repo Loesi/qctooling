@@ -3,6 +3,8 @@ name = "qctooling"
 version = "0.1.0"
 description = "Tooling to spare QC output files and functions to generate common derived values"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES"]
 requires-python = ">=3.13"
 dependencies = [
     "numpy>=2.5.1",
