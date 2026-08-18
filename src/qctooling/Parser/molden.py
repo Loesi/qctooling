@@ -9,13 +9,13 @@ from pydantic import BaseModel
 from ..classes import Basis_grp, l2orb, Wfn, Xyz
 from .parserBase import ParserBase
 
-keywords = ["[ATOMS]", "[GTO]", "[MO]", "[Pseudo]"]
+keywords = ["[ATOMS]", "[GTO]", "[MO]", "[PSEUDO]"]
 
 def read_atoms(file: io.TextIOWrapper, log: logging.Logger) -> Tuple[Xyz, str]:
     elements = []
     coordiantes = []
     for line in file:
-        if any(line.startswith(k) for k in keywords):
+        if any(line.upper().startswith(k) for k in keywords):
             log.info(f"Detected {len(elements)} atoms")
             return Xyz(np.array(elements), np.array(coordiantes)), line
         vals = line.split()
@@ -32,6 +32,7 @@ def read_pseudo(file: io.TextIOWrapper, log: logging.Logger) -> str:
             log.warning(f"Detected use of ECP for {atom}{a_idx}. Only {valenz} electrons in SCF")
         except:
             continue
+        line = file.readline()
     return line
 
 normalization_funcs: Dict[str, Callable[[npt.NDArray[np.float64], npt.NDArray[np.float64], int], npt.NDArray[np.float64]]] = {
@@ -74,7 +75,7 @@ def read_gto(file: io.TextIOWrapper, program: str, log: logging.Logger) -> Tuple
     log.info(f"Detected {len(basis)} basis grps with {sum([b.n_orb for b in basis])} to basis functions")
 
     tags = []
-    while not any(line.startswith(k) for k in keywords):
+    while not any(line.upper().startswith(k) for k in keywords):
         tags.append(line[1:3])
         line = file.readline()
     log.info(f"Detected gto tags {tags}")
@@ -169,7 +170,7 @@ def read_molden(path: pathlib.Path, program: Literal['orca', 'multiwfn'], log: l
             line = f.readline()
 
         xyz, line = read_atoms(f, log)
-        if line.startswith("[PSEUDO]"):
+        if line.upper().startswith("[PSEUDO]"):
             line = read_pseudo(f, log)
         basis, line = read_gto(f, program, log)
         n_AO = sum(b.n_orb for b in basis)
