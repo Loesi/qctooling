@@ -24,9 +24,15 @@ def read_atoms(file: io.TextIOWrapper, log: logging.Logger) -> Tuple[Xyz, str]:
                 
     raise ValueError("End of Atoms section not found")
 
-def read_pseudo(file: io.TextIOWrapper):
-    return None, file.readline()
-    pass
+def read_pseudo(file: io.TextIOWrapper, log: logging.Logger) -> str:
+    line = file.readline()
+    while not line.startswith("["):
+        try:
+            atom, a_idx, valenz = line.split()
+            log.warning(f"Detected use of ECP for {atom}{a_idx}. Only {valenz} electrons in SCF")
+        except:
+            continue
+    return line
 
 normalization_funcs: Dict[str, Callable[[npt.NDArray[np.float64], npt.NDArray[np.float64], int], npt.NDArray[np.float64]]] = {
     "orca": lambda a, c, l: (
@@ -164,7 +170,7 @@ def read_molden(path: pathlib.Path, program: Literal['orca', 'multiwfn'], log: l
 
         xyz, line = read_atoms(f, log)
         if line.startswith("[PSEUDO]"):
-            pseudo, line = read_pseudo(f)
+            line = read_pseudo(f)
         basis, line = read_gto(f, program, log)
         n_AO = sum(b.n_orb for b in basis)
         coeffs, occ, energy, spin, irrep = read_mo(f, n_AO)
