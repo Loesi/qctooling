@@ -121,11 +121,11 @@ def read_mo(
         i+= 1
 
         if i == 1 and (line.strip() == "" or line.startswith("[")):
-            coeffs = coeffs[0]
-            occ = occ[0]
-            energy = energy[0]
-            spin = spin[0]
-            irrep = irrep[0]
+            coeffs = coeffs[[0]]
+            occ = occ[[0]]
+            energy = energy[[0]]
+            spin = spin[[0]]
+            irrep = irrep[[0]]
 
             i = 2
 
