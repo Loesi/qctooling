@@ -5,6 +5,7 @@ import numpy.typing as npt
 from typing import Literal, List, Union, Tuple
 
 from .lib_xyz import Xyz
+from ..util import elements
 from ..intor import overlap, kinetic, nuclear
 
 l2orb = ["s", "p", "d", "f", "g"]
@@ -79,3 +80,16 @@ class Wfn:
             return (self.C[0].T @ self.C[0], self.C[1].T @ self.C[1])
         else:
             return self.C[0].T @ self.C[0]
+
+    @cached_property
+    def charge(self) -> int:
+        n_e = int(np.sum(self.O))
+        n_p = sum(elements.index(e) for e in self.xyz.elements)
+        return n_e - n_p
+
+    @cached_property
+    def spin(self) -> int:
+        if self.O.shape[0] == 1:
+            return 0
+        return int(np.abs(np.sum(self.O[0]) - np.sum(self.O[1]))
+)
