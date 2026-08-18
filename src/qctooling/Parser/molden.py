@@ -170,7 +170,7 @@ def read_molden(path: pathlib.Path, program: Literal['orca', 'multiwfn'], log: l
 
         xyz, line = read_atoms(f, log)
         if line.startswith("[PSEUDO]"):
-            line = read_pseudo(f)
+            line = read_pseudo(f, log)
         basis, line = read_gto(f, program, log)
         n_AO = sum(b.n_orb for b in basis)
         coeffs, occ, energy, spin, irrep = read_mo(f, n_AO)
