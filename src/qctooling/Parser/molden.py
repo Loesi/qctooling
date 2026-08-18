@@ -1,5 +1,5 @@
 
-import pathlib, io
+import pathlib, io, logging, time
 import numpy as np
 import numpy.typing as npt
 from dataclasses import dataclass
@@ -11,11 +11,12 @@ from .parserBase import ParserBase
 
 keywords = ["[ATOMS]", "[GTO]", "[MO]", "[Pseudo]"]
 
-def read_atoms(file: io.TextIOWrapper) -> Tuple[Xyz, str]:
+def read_atoms(file: io.TextIOWrapper, log: logging.Logger) -> Tuple[Xyz, str]:
     elements = []
     coordiantes = []
     for line in file:
         if any(line.startswith(k) for k in keywords):
+            log.info(f"Detected {len(elements)} atoms")
             return Xyz(np.array(elements), np.array(coordiantes)), line
         vals = line.split()
         elements.append(vals[0])
@@ -35,7 +36,7 @@ normalization_funcs: Dict[str, Callable[[npt.NDArray[np.float64], npt.NDArray[np
     "multiwfn": lambda a, c, l: c,
 }
 
-def read_gto(file: io.TextIOWrapper, program: str) -> Tuple[List[Basis_grp], str]:
+def read_gto(file: io.TextIOWrapper, program: str, log: logging.Logger) -> Tuple[List[Basis_grp], str]:
     basis: list[Basis_grp] = []
     run: bool = True
     line = ""
@@ -64,13 +65,15 @@ def read_gto(file: io.TextIOWrapper, program: str) -> Tuple[List[Basis_grp], str
             basis.append(Basis_grp(
                 atom_idx, shell_counter[l], l, alpha, norm_func(alpha, coeff, l)
             ))
+    log.info(f"Detected {len(basis)} basis grps with {sum([b.n_orb for b in basis])} to basis functions")
 
     tags = []
     while not any(line.startswith(k) for k in keywords):
         tags.append(line[1:3])
         line = file.readline()
+    log.info(f"Detected gto tags {tags}")
+    log.warning(f"found gto tags but tags are not applied")
 
-    print("Still need logic go implement cartesian basis functions. though i dont think my programs use them")
     return basis, line
 
 def read_mo(
@@ -128,7 +131,7 @@ def read_mo(
 
     return coeffs, occ, energy, spin, irrep
 
-def post_correction(wfn: Wfn, program: str) -> Wfn:
+def post_correction(wfn: Wfn, program: str, log: logging.Logger) -> Wfn:
     match program:
         case "orca":
             csum = np.cumsum([b.n_orb for b in wfn.basis])
@@ -136,43 +139,39 @@ def post_correction(wfn: Wfn, program: str) -> Wfn:
                 if b.l < 3:
                     continue
                 wfn.C[:, :, csum[i-1]+5 : csum[i]] *= -1
+            log.info("Applied post_correction for orca: phase flip for |m| > 2")
+
+        case "multiwfn":
+            pass
+            log.info("Applied post_correction for mulitwfn: no correction")
 
         case _:
-            pass
+            raise ValueError(f"no post_correction defined for program {program}")
 
     return wfn
 
 
-def read_molden(path: pathlib.Path, program: Literal['orca', 'multiwfn']) -> Wfn:
+def read_molden(path: pathlib.Path, program: Literal['orca', 'multiwfn'], log: logging.Logger) -> Wfn:
     """
     Parse basis fcts und LCAO coeffs from molden.
     program: to differentiate if normalized (like orca) or unnormalized (like multiwfn) primitive coefficients are expected
     """
-
-    match program:
-        case 'orca':
-            is_norm_coeffs: bool = True
-            is_dflt_order:bool = True
-        case 'multiwfn':
-            is_norm_coeffs: bool = False
-            is_dflt_order:bool = True
-        case _:
-            raise ValueError(f"settings for program {program} not known, if the primitive coefficients are normalized use 'orca', if they are not use 'multiwfn'")
-
+    start = time.time()
     with path.open("r") as f:
         line = f.readline()
         while not line.startswith("[Atoms]"):
             line = f.readline()
 
-        xyz, line = read_atoms(f)
+        xyz, line = read_atoms(f, log)
         if line.startswith("[PSEUDO]"):
             pseudo, line = read_pseudo(f)
-        basis, line = read_gto(f, program)
+        basis, line = read_gto(f, program, log)
         n_AO = sum(b.n_orb for b in basis)
         coeffs, occ, energy, spin, irrep = read_mo(f, n_AO)
 
     wfn = Wfn(basis, xyz, coeffs, occ, energy, spin, irrep)
-    wfn = post_correction(wfn, program)
+    wfn = post_correction(wfn, program, log)
+    log.debug(f"reading of {path.resolve()} took {time.time() - start} s")
     return wfn
     
 class MoldenParser(ParserBase):
@@ -183,7 +182,7 @@ class MoldenParser(ParserBase):
         for c in candidates:
             if c.exists():
                 with self._local_path(c) as p:
-                    return read_molden(p, self.program)
+                    return read_molden(p, self.program, self.logger)
 
         raise FileNotFoundError(
             f"Either .molden.input nor .molden found with basename {self.baseName} in {self.path.resolve()}"
