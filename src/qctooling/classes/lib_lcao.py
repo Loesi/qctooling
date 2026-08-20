@@ -12,7 +12,7 @@ l2orb = ["s", "p", "d", "f", "g"]
 cs = {
     "p": ["y", "z", "x"],
     "d": ["xy", "yz", "z2", "xz", "x2-y2"],
-    "f": ["y(3x2-y2)", "xyz", "yz2", "z3", "xz2", "z(x2-y2), x(x2-3y2)"]
+    "f": ["y(3x2-y2)", "xyz", "yz2", "z3", "xz2", "z(x2-y2)", "x(x2-3y2)"]
 }
 
 @dataclass(frozen=True)
@@ -76,11 +76,12 @@ class Wfn:
 
     @cached_property
     def density(self) -> Union[npt.NDArray[np.float64], Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]]:
+        C_occ = self.O[:,:,None] * self.C
         if self.C.shape[0] != 1:
-            return (self.C[0].T @ self.C[0], self.C[1].T @ self.C[1])
+            return (C_occ[0].T @ C_occ[0], C_occ[1].T @ C_occ[1])
         else:
-            return self.C[0].T @ self.C[0]
-
+            return (C_occ[0]/2).T @ (C_occ[0]/2)
+        
     @cached_property
     def charge(self) -> int:
         n_e = int(np.sum(self.O))
