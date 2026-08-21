@@ -62,8 +62,46 @@ class Wfn:
     I: npt.NDArray[np.str_]
 
     @cached_property
-    def basis_str(self):
-        return [f"{self.xyz.elements[b.atom_idx]}-{b}" for b in self.basis]
+    def _basis_str(self) -> List[Tuple[str, str, str, str]]:
+        vals = []
+        for b in self.basis:
+            match b.l:
+                case 0:
+                    vals += [
+                        (b.atom_idx, self.xyz.elements[b.atom_idx], "s", "")
+                        ]
+                case 1:
+                    vals += [
+                        (b.atom_idx, self.xyz.elements[b.atom_idx], "p", m)
+                        for m in ["x", "y", "z"]
+                        ]
+                case 2:
+                    vals += [
+                        (b.atom_idx, self.xyz.elements[b.atom_idx], "d", m)
+                        for m in ["z2", "xz", "yz", "x2y2", "xy"]
+                        ]
+                case 3:
+                    vals += [
+                        (b.atom_idx, self.xyz.elements[b.atom_idx], "f", m)
+                        for m in ["z3", "xz2", "yz2", "z(x2-y2)", "xyz", "x(x2-3y2)", "y(3x2-y2)"]
+                        ]
+                case 4:
+                    raise NotImplementedError("Not yet added order for g orbitals")
+        return vals
+
+    def basis_str(self, fmt: str = "{idx:03d}{element}-{l}{m}") -> npt.NDArray[np.str_]:
+        vals = self._basis_str
+        try:
+            strs = [
+                fmt.format(idx=idx, element=element, l=l, m=m)
+                for idx, element, l, m in vals
+            ]
+        except (KeyError, IndexError) as e:
+            raise ValueError(
+                f"Invalid format string {format!r}: unknown field {e}. "
+                f"Valid fields: idx, element, l, m"
+            ) from e
+        return np.array(strs, dtype=np.str_)
 
     @cached_property
     def S_matrix(self) -> npt.NDArray[np.float64]:
