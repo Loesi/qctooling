@@ -94,7 +94,7 @@ class Wfn:
         try:
             strs = [
                 fmt.format(idx=idx, element=element, l=l, m=m)
-                for idx, element, l, m in vals
+                for idx, element, n, l, m in vals
             ]
         except (KeyError, IndexError) as e:
             raise ValueError(
