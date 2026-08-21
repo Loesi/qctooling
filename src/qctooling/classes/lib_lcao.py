@@ -89,11 +89,11 @@ class Wfn:
                     raise NotImplementedError("Not yet added order for g orbitals")
         return vals
 
-    def basis_str(self, fmt: str = "{idx:03d}{element}-{n}{l}{m}") -> npt.NDArray[np.str_]:
+    def basis_str(self, fmt: str = "{i:03d}{e}-{n}{l}{m}") -> npt.NDArray[np.str_]:
         vals = self._basis_str
         try:
             strs = [
-                fmt.format(idx=idx, element=element, l=l, m=m)
+                fmt.format(i=idx, e=element, n=n, l=l, m=m)
                 for idx, element, n, l, m in vals
             ]
         except (KeyError, IndexError) as e:
