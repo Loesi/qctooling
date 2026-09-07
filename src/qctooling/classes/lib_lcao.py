@@ -104,6 +104,21 @@ class Wfn:
         return np.array(strs, dtype=np.str_)
 
     @cached_property
+    def n_orb(self) -> int:
+        return sum(b.n_orb for b in self.basis)
+
+    def cross_ovlp(self, other: "Wfn") -> npt.NDArray[np.float64]:
+        n_atom1, n_atom2 = len(self.xyz.elements), len(other.xyz.elements)
+        n_ao1, n_ao2 = self.n_orb, other.n_orb
+
+        large_ovlp_mat = overlap(
+            np.concat([self.xyz.coordinates, other.xyz.coordinates], axis=0),
+            [b.asTuple for b in self.basis] + [(b.asTuple[0]+n_atom1, *b.asTuple[1:]) for b in other.basis]
+            )
+
+        return large_ovlp_mat[:n_ao1, n_ao1:]
+
+    @cached_property
     def S_matrix(self) -> npt.NDArray[np.float64]:
         return overlap(self.xyz.coordinates, [b.asTuple for b in self.basis])
 
