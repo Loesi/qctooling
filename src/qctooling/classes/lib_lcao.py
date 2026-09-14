@@ -4,8 +4,7 @@ import numpy as np
 import numpy.typing as npt
 from typing import Literal, List, Union, Tuple
 
-from .lib_xyz import Xyz
-from ..util import elements
+from .lib_xyz import Xyz, elements
 from ..intor import overlap, kinetic, nuclear
 
 l2orb = ["s", "p", "d", "f", "g"]
@@ -90,6 +89,10 @@ class Wfn:
         return vals
 
     def basis_str(self, fmt: str = "{i:03d}{e}-{n}{l}{m}") -> npt.NDArray[np.str_]:
+        """
+        Returns a string for each AO in the Basis. Custom formaters can use 'i' for the AtomIDX, 'e' for the element,
+        and 'n', 'l' and 'm' for the quantum numbers. Default formatting is '{i:03d}{e}-{n}{l}{m}'
+        """
         vals = self._basis_str
         try:
             strs = [
