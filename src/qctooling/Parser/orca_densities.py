@@ -76,7 +76,7 @@ class DensityParser(ParserBase):
     path: pathlib.Path
     baseName: str
     densinfos: List[Tuple[str, int, int]] = []
-    file_stream = True
+    file_stream: bool = True
 
     def model_post_init(self, __context: Any) -> None:
         super().model_post_init( __context)
