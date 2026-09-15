@@ -28,22 +28,22 @@ def _write_Header(file: io.TextIOWrapper, title: str) -> None:
 @catch_errors
 def _write_Atoms(file: io.TextIOWrapper, xyz: Xyz) -> None:
     file.write("[Atoms] AU\n")
-    for idx, (e, (x,y,z)) in enumerate(zip(xyz.elements, xyz.coordinates)):
-        file.write(f"{e:<4} {idx:4d} {elements.index(e):3d} {x:12.6f} {y:12.6f} {z:12.6f}\n")
+    for idx, (e, (x,y,z)) in enumerate(zip(xyz.elements, xyz.coordinates), start=1):
+        file.write(f"{e:<4} {idx:4d} {elements.index(e)+1:3d} {x:12.6f} {y:12.6f} {z:12.6f}\n")
 
 @catch_errors
 def _write_GTO(file: io.TextIOWrapper, basis: List[Basis_grp]) -> None:
     current_atom_idx = 0
-    file.write("[GTO]\n")
+    file.write("[GTO]")
     for b in basis:
         grp_atom_idx = b.atom_idx + 1
         if current_atom_idx < grp_atom_idx:
-            file.write(("\n" if grp_atom_idx == 0 else "") + f"    {grp_atom_idx}  0\n") #TODO: idk what the second number is supposed to be
+            file.write(f"\n    {grp_atom_idx} 0\n") #TODO: idk what the second number is supposed to be
             current_atom_idx = grp_atom_idx
         file.write(f"{l2orb[b.l]} {len(b.alpha):3d} 1.0\n")
         for alpha, coeff in zip(b.alpha, b.coeff):
-            file.write(f"  {alpha:15.8E} {coeff:15.8E}\n")
-    file.write("\n[5D]\n") #TODO:Checkout if i might need to do more tagging
+            file.write(f" {alpha:15.8E} {coeff:15.8E}\n")
+    file.write("\n[5D]\n[7F]\n[9G]\n") #TODO:Checkout if i might need to do more tagging
 
 @catch_errors
 def _write_MO(file:io.TextIOWrapper, irrep: npt.NDArray[np.str_], ener: npt.NDArray[np.float64],
@@ -80,5 +80,7 @@ class MoldenWriter(WriterBase):
                 if err is not None:
                     self.logger.error(f"{func.func.__name__} failed: {err}")
                     return False
+                else:
+                    self.logger.info(f"{func.func.__name__} writing completed.")
 
         return True
