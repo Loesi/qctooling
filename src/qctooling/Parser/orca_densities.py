@@ -32,7 +32,8 @@ def parse_densinfo(info_path: pathlib.Path) -> List[Tuple[str, int, int]]:
             section_name = "UNKNOWN_SECTION"
 
         assert d[520:528] == b'\xff'*8, f"got: {d[520:528]} in section {section_name}"
-        assert d[565:581] == b'\xff'*16, f"got: {d[565:581]} in section {section_name}"
+        # assert d[565:581] == b'\xff'*16, f"got: {d[565:581]} in section {section_name}"
+        # apperently this was an unwarrented assumption
 
         rows, cols = struct.unpack('<II', d[528:536])
         section_info.append((section_name, rows, cols))
