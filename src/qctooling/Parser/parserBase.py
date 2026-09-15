@@ -52,6 +52,7 @@ class ParserBase(BaseModel):
     path: pathlib.Path
     baseName: str
     lvprt: int = logging.WARNING
+    file_stream: bool = False
 
     _logger: logging.Logger = PrivateAttr()
 
@@ -72,6 +73,7 @@ class ParserBase(BaseModel):
             pathlib.Path(tempfile.gettempdir())
             / f"{filepath.stem}-{uuid.uuid4().hex}{filepath.suffix}"
         )
+        self._logger.debug("starting copy '%s' -> '%s'", filepath, tmp_path)
         shutil.copy2(filepath, tmp_path)
         self._logger.debug("copied '%s' -> '%s'", filepath, tmp_path)
         return tmp_path
@@ -82,15 +84,10 @@ class ParserBase(BaseModel):
         self._logger.debug("removed temp copy '%s'", tmp_path)
 
     @contextmanager
-    def _local_path(self, filepath: pathlib.Path) -> Generator[pathlib.Path]:
-        """Yield a path that is local to this machine.
-
-        If ``filepath`` lives on a network filesystem it is first copied into
-        the system temp dir and that copy is removed again when the block ends.
-        Local files are yielded untouched.
-        """
+    def _parse_path(self, filepath: pathlib.Path) -> Generator[pathlib.Path]:
+        """Yield a path for parsing, copying network files unless streaming."""
         filepath = pathlib.Path(filepath)
-        if not _is_network_path(filepath):
+        if self.file_stream or not _is_network_path(filepath):
             yield filepath
             return
         tmp_path = self._cp_to_tmp(filepath)

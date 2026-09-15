@@ -76,9 +76,13 @@ class DensityParser(ParserBase):
     path: pathlib.Path
     baseName: str
     densinfos: List[Tuple[str, int, int]] = []
+    file_stream = True
 
     def model_post_init(self, __context: Any) -> None:
+        super().model_post_init( __context)
+        self.logger.debug(f"parsing densitiesinfo from {self.path / (self.baseName + ".densitiesinfo")}")
         self.densinfos = parse_densinfo(self.path / (self.baseName + ".densitiesinfo"))
+        self.logger.info(f"finished parsing densitiesinfo from {self.path / (self.baseName + ".densitiesinfo")}")
 
     @property
     def densities(self):
@@ -96,7 +100,7 @@ class DensityParser(ParserBase):
         if len(unavail_dens) != 0:
             raise ValueError(f"Densities {unavail_dens} not available: only {self.densities} are available")
 
-        with self._local_path(self.path / (self.baseName + ".densities")) as dens_path:
+        with self._parse_path(self.path / (self.baseName + ".densities")) as dens_path:
             req_dens = parse_densities(
                 dens_path,
                 [d[1:] if i in dens_idx else d[1]*d[2] for i,d in enumerate(self.densinfos)],
