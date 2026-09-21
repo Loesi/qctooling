@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from functools import cached_property
 import numpy as np
 import numpy.typing as npt
+from scipy.linalg import sqrtm
 from typing import Literal, List, Union, Tuple
 
 from .lib_xyz import Xyz, elements
@@ -127,8 +128,7 @@ class Wfn:
 
     @cached_property
     def S_matrix_root(self) -> npt.NDArray[np.float64]:
-        s, U = np.linalg.eigh(self.S_matrix)
-        return U @ np.diag(1.0/np.sqrt(s)) @ U.T
+        return sqrtm(self.S_matrix)
 
     @cached_property
     def density(self) -> Union[npt.NDArray[np.float64], Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]]:
