@@ -35,6 +35,18 @@ class Basis_grp:
         shell = l2orb[self.l]
         return f"{self.n}{shell}"
 
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Basis_grp):
+            raise ValueError()
+        return all([
+            self.atom_idx == other.atom_idx,
+            self.n == other.n,
+            self.l == other.l,
+            bool(np.all(np.isclose(self.alpha, other.alpha))),
+            bool(np.all(np.isclose(self.coeff, other.coeff))),
+            self.otype == other.otype,
+        ])
+
     def asCat(self):
         return Basis_grp(self.atom_idx, self.n, self.l, self.alpha, self.coeff, 'Carthesian')
 
