@@ -67,11 +67,12 @@ class Basis_grp:
 class Wfn:
     basis: List[Basis_grp] # as unnormalized coeffs (N_cont * d_k)
     xyz: Xyz
-    C: npt.NDArray[np.float64]
-    O: npt.NDArray[np.float64]
-    E: npt.NDArray[np.float64]
-    S: npt.NDArray[np.bool]
-    I: npt.NDArray[np.str_]
+    c: npt.NDArray[np.float64]
+    o: npt.NDArray[np.float64]
+    e: npt.NDArray[np.float64]
+    s: npt.NDArray[np.bool]
+    i: npt.NDArray[np.str_]
+    name: str = ""
 
     @cached_property
     def _basis_str(self) -> List[Tuple[str, str, int, str, str]]:
@@ -123,7 +124,7 @@ class Wfn:
     def n_orb(self) -> int:
         return sum(b.n_orb for b in self.basis)
 
-    def cross_ovlp(self, other: "Wfn") -> npt.NDArray[np.float64]:
+    def S_cross(self, other: "Wfn") -> npt.NDArray[np.float64]:
         n_atom1, n_atom2 = len(self.xyz.elements), len(other.xyz.elements)
         n_ao1, n_ao2 = self.n_orb, other.n_orb
 
@@ -135,30 +136,56 @@ class Wfn:
         return large_ovlp_mat[:n_ao1, n_ao1:]
 
     @cached_property
-    def S_matrix(self) -> npt.NDArray[np.float64]:
+    def S(self) -> npt.NDArray[np.float64]:
         return overlap(self.xyz.coordinates, [b.asTuple for b in self.basis])
 
     @cached_property
-    def S_matrix_root(self) -> npt.NDArray[np.float64]:
-        return sqrtm(self.S_matrix)
+    def sqrtS(self) -> npt.NDArray[np.float64]:
+        return sqrtm(self.S)
+
+    @cached_property
+    def sqrtS_inv(self) -> npt.NDArray[np.float64]:
+        return np.linalg.inv(self.sqrtS)
 
     @cached_property
     def density(self) -> Union[npt.NDArray[np.float64], Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]]:
-        C_occ = self.O[:,:,None] * self.C
-        if self.C.shape[0] != 1:
+        C_occ = self.o[:,:,None] * self.c
+        if self.c.shape[0] != 1:
             return (C_occ[0].T @ C_occ[0], C_occ[1].T @ C_occ[1])
         else:
             return (C_occ[0]/2).T @ (C_occ[0]/2)
         
     @cached_property
     def charge(self) -> int:
-        n_e = int(np.sum(self.O))
+        n_e = int(np.sum(self.o))
         n_p = sum(elements.index(e) for e in self.xyz.elements)
         return n_e - n_p
 
     @cached_property
     def spin(self) -> int:
-        if self.O.shape[0] == 1:
+        if self.o.shape[0] == 1:
             return 0
-        return int(np.abs(np.sum(self.O[0]) - np.sum(self.O[1]))
-)
+        return int(np.abs(np.sum(self.o[0]) - np.sum(self.o[1])))
+
+
+def _get_tdens(X: npt.NDArray, C: npt.NDArray, offset: int):
+    return C.T[:, offset:offset + X.shape[0]] @ X @ C[offset + X.shape[0]: offset + X.shape[0] + X.shape[1]]
+
+@dataclass(frozen=True)
+class CIstate:
+    multiplicity: int
+    iroot: int
+    energy: float
+    X: Tuple[npt.NDArray, ...]
+    offset: Tuple[int, ...]
+
+    def get_AO_Tdens(self, wfn: Wfn) -> Tuple[npt.NDArray[np.float64], ...]:
+        return tuple(_get_tdens(
+                x,
+                wfn.c[i if wfn.c.shape[0]>= i else 0],
+                self.offset[i],
+            ) for i, x in enumerate(self.X))
+
+    def get_MO_Tdens(self, wfn: Wfn) -> Tuple[npt.NDArray[np.float64], ...]:
+        return tuple(np.concat([np.zeros((o,x.shape[1])), x], axis=0) for o, x in zip(self.offset, self.X))
+

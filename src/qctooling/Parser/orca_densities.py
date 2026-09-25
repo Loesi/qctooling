@@ -3,7 +3,6 @@ import struct, pathlib
 from typing import Union, List, Tuple, Generator, Any
 import numpy as np
 import numpy.typing as npt
-from pydantic import BaseModel, field_validator
 
 from .parserBase import ParserBase
 
@@ -73,8 +72,6 @@ def parse_densities(file_path: pathlib.Path, layout: List[Union[Tuple[int, int],
             )
 
 class DensityParser(ParserBase):
-    path: pathlib.Path
-    baseName: str
     densinfos: List[Tuple[str, int, int]] = []
     file_stream: bool = True
 

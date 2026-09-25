@@ -3,11 +3,11 @@ configure_logging()
 
 from .classes import *
 from .classes import __all__ as classes_all
-from .Parser import *
-from .Parser import __all__ as parser_all
-from .Writer import *
-from .Writer import __all__ as writer_all
-from .util import *
-from .util import __all__ as util_all
 
-__all__ = classes_all + parser_all + writer_all + util_all
+from . import Parser
+from . import Writer
+from . import orbitals
+from . import util
+
+
+__all__ = classes_all + ["Parser", "Writer", "orbitals", "util"]

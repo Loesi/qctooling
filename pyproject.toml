@@ -1,6 +1,6 @@
 [project]
 name = "qctooling"
-version = "0.1.0"
+version = "0.2.0"
 description = "Tooling to spare QC output files and functions to generate common derived values"
 readme = "README.md"
 license = "MIT"

@@ -145,7 +145,7 @@ def post_correction(wfn: Wfn, program: str, log: logging.Logger) -> Wfn:
             for i, b in enumerate(wfn.basis):
                 if b.l < 3:
                     continue
-                wfn.C[:, :, csum[i-1]+5 : csum[i]] *= -1
+                wfn.c[:, :, csum[i-1]+5 : csum[i]] *= -1
             log.info("Applied post_correction for orca: phase flip for |m| > 2")
 
         case "multiwfn":
