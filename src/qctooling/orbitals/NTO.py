@@ -1,15 +1,7 @@
 import numpy as np
 import numpy.typing as npt
-from typing import Tuple, Protocol, List
-from ..classes import Wfn, CIstate
-from ._basis_match import checkBasisMatch
-
-class Excited_State(Protocol):
-    def get_MO_Tdens(self, wfn: Wfn) -> Tuple[npt.NDArray[np.float64], ...]:
-        ...
-
-    def get_AO_Tdens(self, wfn: Wfn) -> Tuple[npt.NDArray[np.float64], ...]:
-            ...
+from typing import Tuple, List
+from ..classes import Wfn, Excited_State
 
 def generate_NTOs(wfn: Wfn, state: Excited_State) -> Wfn:
     T_mats = state.get_MO_Tdens(wfn)

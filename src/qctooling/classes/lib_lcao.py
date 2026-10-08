@@ -3,7 +3,7 @@ from functools import cached_property
 import numpy as np
 import numpy.typing as npt
 from scipy.linalg import sqrtm
-from typing import Literal, List, Union, Tuple
+from typing import Literal, List, Union, Tuple, Protocol
 
 from .lib_xyz import Xyz, elements
 from ..intor import overlap, kinetic, nuclear
@@ -99,7 +99,12 @@ class Wfn:
                         for m in ["z3", "xz2", "yz2", "z(x2-y2)", "xyz", "x(x2-3y2)", "y(3x2-y2)"]
                         ]
                 case 4:
-                    raise NotImplementedError("Not yet added order for g orbitals")
+                    vals += [
+                        (b.atom_idx, self.xyz.elements[b.atom_idx], b.n, "f", m)
+                        for m in ["+0", "+1", "-1", "+2", "-2", "+3", "-3", "+4", "-4"]
+                        ]
+                case _:
+                    raise NotImplementedError("Not yet added order for l = {b.l} orbitals")
         return vals
 
     def basis_str(self, fmt: str = "{i:03d}{e}-{n}{l}{m}") -> npt.NDArray[np.str_]:
@@ -189,3 +194,16 @@ class CIstate:
     def get_MO_Tdens(self, wfn: Wfn) -> Tuple[npt.NDArray[np.float64], ...]:
         return tuple(np.concat([np.zeros((o,x.shape[1])), x], axis=0) for o, x in zip(self.offset, self.X))
 
+    def n_spin_states(self) -> int:
+        return len(self.X)
+
+
+class Excited_State(Protocol):
+    def get_MO_Tdens(self, wfn: Wfn) -> Tuple[npt.NDArray[np.float64], ...]:
+        ...
+
+    def get_AO_Tdens(self, wfn: Wfn) -> Tuple[npt.NDArray[np.float64], ...]:
+        ...
+
+    def n_spin_states(self) -> int:
+        ...
