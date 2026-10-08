@@ -14,7 +14,7 @@ import os
 import sys
 
 _LIB_NAMES = {
-    "win32": ["cint.dll"],
+    "win32": ["libcint.dll"],
     "darwin": ["libcint.dylib"],
     "linux": ["libcint.so", "libcint.so.6"],
 }
