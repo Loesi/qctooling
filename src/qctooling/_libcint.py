@@ -32,8 +32,27 @@ def _candidate_paths():
             if path.is_file():
                 yield str(path)
 
+def _register_linked_libary_paths():
+    paths = os.environ.get("QCTOOLING_LINKED_LIBARY_PATHS")
+    if paths is None:
+        return
+    
+    match sys.platform:
+        case "win32":
+            func = lambda x: os.add_dll_directory(x) # type: ignore
+        case "darwin" | "linux":
+            return
+        case _:
+            return
+
+    for p in paths.split(";"):
+        func(p)
+    
+
 def load_libcint() -> ctypes.CDLL:
     """Locate and load the libcint shared libary, returned as ``ctypes.CDLL``"""
+    _register_linked_libary_paths()
+    
     tried = []
     for path in _candidate_paths():
         try:
