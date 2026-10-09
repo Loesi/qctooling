@@ -18,6 +18,7 @@ _LIB_NAMES = {
     "darwin": ["libcint.dylib"],
     "linux": ["libcint.so", "libcint.so.6"],
 }
+_DLL_DIRECTORY_HANDLES = []
 
 def _candidate_paths():
     override = os.environ.get("LIBCINT_PATH")
@@ -33,20 +34,18 @@ def _candidate_paths():
                 yield str(path)
 
 def _register_linked_libary_paths():
-    paths = os.environ.get("QCTOOLING_LINKED_LIBARY_PATHS")
-    if paths is None:
+    if sys.platform != "win32":
         return
-    
-    match sys.platform:
-        case "win32":
-            func = lambda x: os.add_dll_directory(x) # type: ignore
-        case "darwin" | "linux":
-            return
-        case _:
-            return
 
-    for p in paths.split(";"):
-        func(p)
+    package = __package__
+    if package:
+        libdir = importlib.resources.files(package).joinpath("_libcint")
+        if libdir.is_dir():
+            _DLL_DIRECTORY_HANDLES.append(os.add_dll_directory(str(libdir)))
+
+    paths = os.environ.get("QCTOOLING_LINKED_LIBARY_PATHS", "")
+    for path in filter(None, paths.split(os.pathsep)):
+        _DLL_DIRECTORY_HANDLES.append(os.add_dll_directory(path))
     
 
 def load_libcint() -> ctypes.CDLL:

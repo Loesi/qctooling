@@ -30,6 +30,9 @@ exclude = [
     "lib/cmake/**",
 ]
 
+[project.entry-points.pyinstaller40]
+hook-dirs = "qctooling.__pyinstaller:get_hook_dirs"
+
 [dependency-groups]
 dev = [
     "ipykernel>=7.3.0",
