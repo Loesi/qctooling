@@ -15,7 +15,7 @@ def generate_NTOs(wfn: Wfn, state: Excited_State) -> Wfn:
         U, s, Vt = np.linalg.svd(t, full_matrices=False)
         C_nto[i, n_occ-1::-1] = (U.T @ c[:n_occ])
         C_nto[i, n_occ:2*n_occ] = (Vt @ c[n_occ:])
-        E_nto[i, n_occ-1::-1] = E_nto[i, n_occ:2*n_occ] = s
+        E_nto[i, n_occ-1::-1] = E_nto[i, n_occ:2*n_occ] = np.square(s)
         O_nto[i, :n_occ] = (1 if O_nto.shape[0] == 2 else 2)
         S_nto[i, :] = (0 if i == 0 else 1)
         assert np.all(np.isclose(C_nto[i, :2*n_occ] @ wfn.S @ C_nto[i, :2*n_occ].T, np.eye(2*n_occ))), f"non orthogonal NTOs detected"
