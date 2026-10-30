@@ -24,21 +24,21 @@ def generate_NDOs(wfn1: Wfn, wfn2: Wfn) -> Wfn:
         case 1,1:
             n_occ = ((np.sum(wfn1.o, axis=1)/2).astype(np.int32), (np.sum(wfn2.o, axis=1)/2).astype(np.int32))
             C, E = _spin_NDO(wfn1.o[0,:n_occ[0][0]], wfn2.c[0,:n_occ[1][0]], wfn1.S, wfn1.sqrtS, np.linalg.inv(wfn1.sqrtS_inv))
-            return Wfn(wfn1.basis, wfn1.xyz, C, E, np.full(wfn1.o.shape, 2), wfn1.s, wfn1.i)
+            return Wfn(wfn1.basis, wfn1.xyz, C, np.full(wfn1.o.shape, 2), E, wfn1.s, wfn1.i)
 
         case 1,2:
             n_occ = ((np.sum(wfn1.o, axis=1)/2).astype(np.int32), np.sum(wfn2.o, axis=1).astype(np.int32))
             C, E = (np.concat(arrs, axis=0) for arrs in zip(*[_spin_NDO(wfn1.c[0,:n_occ[0][0]], wfn2.c[i,:n_occ[1][i]], wfn1.S, wfn1.sqrtS, wfn1.sqrtS_inv) for i in range(2)]))
-            return Wfn(wfn1.basis, wfn1.xyz, C, E, np.ones(wfn2.o.shape), wfn2.s, wfn2.i)
+            return Wfn(wfn1.basis, wfn1.xyz, C, np.ones(wfn2.o.shape), E, wfn2.s, wfn2.i)
 
         case 2,1:
             n_occ = (np.sum(wfn1.o, axis=1).astype(np.int32), (np.sum(wfn2.o, axis=1)/2).astype(np.int32))
             C, E = (np.concat(arrs, axis=0) for arrs in zip(*[_spin_NDO(wfn1.c[i,:n_occ[0][i]], wfn2.c[0,:n_occ[1][0]], wfn1.S, wfn1.sqrtS, wfn1.sqrtS_inv) for i in range(2)]))
-            return Wfn(wfn1.basis, wfn1.xyz, C, E, np.ones(wfn1.o.shape), wfn1.s, wfn1.i)
+            return Wfn(wfn1.basis, wfn1.xyz, C, np.ones(wfn1.o.shape), E, wfn1.s, wfn1.i)
 
         case 2,2:
             n_occ = (np.sum(wfn1.o, axis=1).astype(np.int32), np.sum(wfn2.o, axis=1).astype(np.int32))
             C, E = (np.concat(arrs, axis=0) for arrs in zip(*[_spin_NDO(wfn1.c[i,:n_occ[0][i]], wfn2.c[i,:n_occ[1][i]], wfn1.S, wfn1.sqrtS, wfn1.sqrtS_inv) for i in range(2)]))
-            return Wfn(wfn1.basis, wfn1.xyz, C, E, np.ones(wfn1.o.shape), wfn1.s, wfn1.i)
+            return Wfn(wfn1.basis, wfn1.xyz, C, np.ones(wfn1.o.shape), E, wfn1.s, wfn1.i)
             
     raise ValueError("Unrecognize coefficient shape: {wfn1.c.shape} & {wfn2.c.shape}")
